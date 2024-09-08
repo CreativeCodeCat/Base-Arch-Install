@@ -110,7 +110,7 @@ Enter in your password and **Keep it safe**. There is no "forgot password" here.
 If you have a home partition, then initialize this as well
 
 ```
-$ cryptsetup luksFormat -v -s 512 -h sha512 /dev/nvme1n1p1
+$ cryptsetup luksFormat -v -s 512 -h sha512 /dev/nvme0n1p4
 ```
 
 Mount the drives:
@@ -122,7 +122,7 @@ $ cryptsetup open /dev/nvme0n1p3 luks_lvm
 If you have a home parition:
 
 ```
-$ cryptsetup open /dev/nvme1n1p1 arch-home
+$ cryptsetup open /dev/nvme0n1p4 arch-home
 ```
 
 ## Volume setup
@@ -376,7 +376,7 @@ Add to partitions
 ```
 $ cryptsetup luksAddKey /dev/nvme0n1p3 /secure/root_keyfile.bin
 # skip below if using single disk
-$ cryptsetup luksAddKey /dev/nvme1n1p1 /secure/home_keyfile.bin
+$ cryptsetup luksAddKey /dev/nvme0n1p4 /secure/home_keyfile.bin
 ```
 
 ```
@@ -392,7 +392,7 @@ FILES=(/secure/root_keyfile.bin)
 Get uuid of home partition
 
 ```
-$ blkid /dev/nvme1n1p1
+$ blkid /dev/nvme0n1p4
 ```
 
 Open up the crypt table.
