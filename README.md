@@ -51,7 +51,7 @@ same, or the might be an sdx drive, such as sda or sdb.
 $ lsblk
 ```
 
-Write random data into your drive. 
+Write random data into your drive.
 
 ```
 $ dd if=/dev/urandom of=/dev/nvme0n1 status=progress bs=4096
@@ -183,13 +183,13 @@ $ lvcreate -n root -l +100%FREE arch
 
 ## Filesystems
 
-FAT32 on EFI partiton
+FAT32 on EFI partition
 
 ```
 $ mkfs.fat -F32 /dev/nvme0n1p1 
 ```
 
-EXT4 on Boot partiton
+EXT4 on Boot partition
 
 ```
 $ mkfs.ext4 /dev/nvme0n1p2
@@ -234,7 +234,7 @@ Create home and boot
 $ mkdir -p /mnt/{home,boot}
 ```
 
-Mount the boot partiton
+Mount the boot partition
 
 ```
 $ mount /dev/nvme0n1p2 /mnt/boot
@@ -261,13 +261,13 @@ $ mount /dev/nvme0n1p1 /mnt/boot/efi
 ## Install arch
 
 ```
-$ pacstrap -K /mnt base linux linux-firmware
+$ pacstrap -K /mnt base linux linux-firmware dracut
 ```
 
 With base-devel
 
 ```
-$ pacstrap -K /mnt base base-devel linux linux-firmware
+$ pacstrap -K /mnt base base-devel linux linux-firmware dracut
 ```
 
 Load the file table
@@ -296,24 +296,18 @@ $ pacman -S neovim
 $ pacman -S nano
 ```
 
-### Decrypting volumes
+### Dracut configuration
 
-Open up mkinitcpio.conf
-
-```
-$ nvim /etc/mkinitcpio.conf
-```
-
-add `encrypt` and `lvm2` into the hooks
+Open the dracut configuration file
 
 ```
-HOOKS=(... block encrypt lvm2 filesystems fsck)
+$ nvim /etc/dracut.conf
 ```
 
-install lvm2
+Ensure it's configured for encryption and LVM (for root and home partitions)
 
 ```
-$ pacman -S lvm2
+add_dracutmodules+=" lvm crypt "
 ```
 
 ### Bootloader
@@ -330,7 +324,7 @@ Setup grub on efi partition
 $ grub-install --efi-directory=/boot/efi
 ```
 
-obtain your lvm partition device UUID
+Obtain your LVM partition device UUID
 
 ```
 blkid /dev/nvme0n1p3
@@ -355,6 +349,7 @@ $ mkdir /secure
 ```
 
 Root keyfile
+
 ```
 $ dd if=/dev/random of=/secure/root_keyfile.bin bs=512 count=8
 ```
@@ -380,35 +375,39 @@ $ cryptsetup luksAddKey /dev/nvme0n1p4 /secure/home_keyfile.bin
 ```
 
 ```
-$ nvim /etc/mkinitcpio.conf
+$ nvim /etc/dracut.conf
 ```
 
+Add the keyfile paths:
+
 ```
-FILES=(/secure/root_keyfile.bin)
+FILES+="/secure/root_keyfile.bin"
 ```
 
 ### Home Partition Crypttab (Skip if single disk)
 
-Get uuid of home partition
+Get UUID of home partition
 
 ```
 $ blkid /dev/nvme0n1p4
 ```
 
 Open up the crypt table.
+
 ```
 $ nvim /etc/crypttab
 ```
 
 Add in the following line at the bottom of the table
-```
-arch-home      UUID=<uuid>    /secure/home_keyfile.bin
-```
-
-Reload linux
 
 ```
-$ mkinitcpio -p linux
+arch-home UUID=<uuid> /secure/home_keyfile.bin
+```
+
+Reload dracut configuration
+
+```
+$ dracut -f
 ```
 
 ## Grub
@@ -454,7 +453,7 @@ Enable timesyncd
 $ nvim /etc/locale.gen
 ```
 
-uncomment the UTF8 lang you want
+Uncomment the UTF8 lang you want
 
 ```
 en_US.UTF-8 UTF-8
@@ -472,16 +471,15 @@ $ nvim /etc/locale.conf
 LANG=en_US.UTF-8
 ```
 
+### Hostname
 
-### hostname
-
-enter it into your /etc/hostname file
+Enter it into your `/etc/hostname` file
 
 ```
 $ nvim /etc/hostname
 ```
 
-or 
+Or 
 
 ```
 $ echo "mymachine" > /etc/hostname
@@ -495,19 +493,19 @@ First secure the root user by setting a password
 $ passwd
 ```
 
-Then install the shell you want
+Then install the shell you want (fish)
 
 ```
-$ pacman -S zsh
+$ pacman -S fish
 ```
 
 Add a new user as follows
 
 ```
-$ useradd -m -G wheel -s /bin/zsh user
+$ useradd -m -G wheel -s /usr/bin/fish user
 ```
 
-set the password on the user
+Set the password on the user
 
 ```
 $ passwd user
@@ -532,14 +530,23 @@ $ systemctl enable NetworkManager
 
 ### Display Manager
 
-```
-$ pacman -S gnome
-```
+Install KDE Plasma
 
 ```
-$ systemctl enable gdm
+$ pacman -S plasma kde-applications
 ```
 
+Install SDDM
+
+```
+$ pacman -S sddm
+```
+
+Enable SDDM
+
+```
+$ systemctl enable sddm
+```
 
 ### Microcode
 
@@ -559,7 +566,6 @@ $ pacman -S intel-ucode
 $ grub-mkconfig -o /boot/grub/grub.cfg
 $ grub-mkconfig -o /boot/efi/EFI/arch/grub.cfg
 ```
-
 
 ## Reboot
 
